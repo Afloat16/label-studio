@@ -62,8 +62,8 @@ jobs:
           git checkout 0f828731e70bab5ae2ca026995a3b97235c60f02 -- label_studio/core/utils/common.py
       - name: Check changed Python files
         run: |
-          uv run --no-sync ruff check label_studio/core/utils/common.py label_studio/core/tests/test_signal_suspension.py
-          uv run --no-sync ruff format --check label_studio/core/utils/common.py label_studio/core/tests/test_signal_suspension.py
+          uvx --from ruff==0.15.1 ruff check label_studio/core/utils/common.py label_studio/core/tests/test_signal_suspension.py
+          uvx --from ruff==0.15.1 ruff format --check label_studio/core/utils/common.py label_studio/core/tests/test_signal_suspension.py
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
@@ -72,3 +72,4 @@ jobs:
             patched.log
             existing.log
             baseline.log
+
