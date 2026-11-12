@@ -1,0 +1,92 @@
+name: Validate nonfilterable queryset iteration
+on:
+  push:
+    branches: [validation/nonfilterable-queryset-batches-20261112]
+permissions:
+  contents: read
+jobs:
+  database-native:
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, postgresql]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DJANGO_SETTINGS_MODULE: core.settings.label_studio
+      DJANGO_DB: ${{ matrix.database }}
+      PYTHONPATH: label_studio
+      COLLECT_ANALYTICS: "false"
+      SENTRY_RATE: "0"
+      SENTRY_DSN: ""
+      JSON_LOG: "0"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 1b3c60f52c0d8aea720f2fe35d21674188a05b73
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - name: Install documented system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libffi8 libldap2-dev libsasl2-dev libssl-dev libxml2-dev libxslt-dev python3-dev
+      - name: Install locked native dependencies
+        run: uv sync --frozen --group test
+      - name: Generate native version file
+        run: uv run --no-sync python label_studio/core/version.py
+      - name: Run native query iteration regressions
+        run: |
+          set -o pipefail
+          uv run --no-sync pytest label_studio/core/tests/test_nonfilterable_querysets.py -q 2>&1 | tee patched.log
+      - name: Run existing iterator controls
+        run: |
+          set -o pipefail
+          uv run --no-sync pytest label_studio/core/tests/test_iterators.py -q 2>&1 | tee existing.log
+      - name: Verify original query batching fails regressions
+        run: |
+          git checkout bb9dc252632ea1d9e417be17ef45ea4e5668370b -- label_studio/core/utils/iterators.py
+          set +e
+          uv run --no-sync pytest label_studio/core/tests/test_nonfilterable_querysets.py -q > baseline.log 2>&1
+          status=$?
+          set -e
+          cat baseline.log
+          test "$status" -eq 1
+          uv run --no-sync python - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path("baseline.log").read_text()
+          assert re.search(r"[1-9]\d* failed", text), text
+          assert "ERROR collecting" not in text, text
+          PY
+          git checkout 1b3c60f52c0d8aea720f2fe35d21674188a05b73 -- label_studio/core/utils/iterators.py
+      - name: Check changed Python files
+        run: |
+          uvx --from ruff==0.15.1 ruff check label_studio/core/utils/iterators.py label_studio/core/tests/test_nonfilterable_querysets.py
+          uvx --from ruff==0.15.1 ruff format --check label_studio/core/utils/iterators.py label_studio/core/tests/test_nonfilterable_querysets.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: nonfilterable-queryset-batches-${{ matrix.database }}
+          path: |
+            patched.log
+            existing.log
+            baseline.log
+
+
