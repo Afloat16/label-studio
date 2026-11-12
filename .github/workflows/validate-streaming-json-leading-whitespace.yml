@@ -1,0 +1,92 @@
+name: Validate streaming JSON leading whitespace
+on:
+  push:
+    branches: [validation/streaming-json-leading-whitespace-20261112]
+permissions:
+  contents: read
+jobs:
+  database-native:
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, postgresql]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DJANGO_SETTINGS_MODULE: core.settings.label_studio
+      DJANGO_DB: ${{ matrix.database }}
+      PYTHONPATH: label_studio
+      COLLECT_ANALYTICS: "false"
+      SENTRY_RATE: "0"
+      SENTRY_DSN: ""
+      JSON_LOG: "0"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 1625454ddf75e220da81e43a3a8d819d4a2f3db6
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - name: Install documented system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libffi8 libldap2-dev libsasl2-dev libssl-dev libxml2-dev libxslt-dev python3-dev
+      - name: Install locked native dependencies
+        run: uv sync --frozen --group test
+      - name: Generate native version file
+        run: uv run --no-sync python label_studio/core/version.py
+      - name: Run native streaming JSON regressions
+        run: |
+          set -o pipefail
+          uv run --no-sync pytest label_studio/tests/data_import/test_json_streaming_whitespace.py -q 2>&1 | tee patched.log
+      - name: Run existing import validation controls
+        run: |
+          set -o pipefail
+          uv run --no-sync pytest label_studio/tests/data_import/test_streaming_import.py::TestJSONStreamingReader label_studio/tests/data_import/test_streaming_import.py::TestEndToEndStreamingFromUploads label_studio/tests/data_import/test_streaming_import.py::TestLoadTasksForAsyncImportStreaming -q 2>&1 | tee existing.log
+      - name: Verify original fixed prefix rejects valid JSON
+        run: |
+          git checkout 2d111356dcaed6b137fce6884112bd6e7c0997fc -- label_studio/data_import/models.py
+          set +e
+          uv run --no-sync pytest label_studio/tests/data_import/test_json_streaming_whitespace.py -q > baseline.log 2>&1
+          status=$?
+          set -e
+          cat baseline.log
+          test "$status" -eq 1
+          uv run --no-sync python - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path("baseline.log").read_text()
+          assert re.search(r"[1-9]\d* failed", text), text
+          assert "ERROR collecting" not in text, text
+          PY
+          git checkout 1625454ddf75e220da81e43a3a8d819d4a2f3db6 -- label_studio/data_import/models.py
+      - name: Check changed Python files
+        run: |
+          uvx --from ruff==0.15.1 ruff check label_studio/data_import/models.py label_studio/tests/data_import/test_json_streaming_whitespace.py
+          uvx --from ruff==0.15.1 ruff format --check --diff label_studio/data_import/models.py label_studio/tests/data_import/test_json_streaming_whitespace.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: streaming-json-leading-whitespace-${{ matrix.database }}
+          path: |
+            patched.log
+            existing.log
+            baseline.log
+
+
