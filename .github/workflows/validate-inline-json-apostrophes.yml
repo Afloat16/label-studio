@@ -18,7 +18,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -35,8 +35,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 6611ff5f988a6a0e6e6f92d23d0582abcb409828
-          fetch-depth: 2
+          ref: 967977d2c7e0e1cca0612e2e481642bf4351f11f
+          fetch-depth: 3
           persist-credentials: false
       - uses: astral-sh/setup-uv@v10.3.3
         with:
@@ -75,7 +75,7 @@ jobs:
           assert re.search(r"[1-9]\d* failed", text), text
           assert "ERROR collecting" not in text, text
           PY
-          git checkout 6611ff5f988a6a0e6e6f92d23d0582abcb409828 -- label_studio/data_import/uploader.py
+          git checkout 967977d2c7e0e1cca0612e2e481642bf4351f11f -- label_studio/data_import/uploader.py
       - name: Check changed Python files
         run: |
           uvx --from ruff==0.15.1 ruff check label_studio/data_import/uploader.py label_studio/tests/data_import/test_inline_json_quotes.py
