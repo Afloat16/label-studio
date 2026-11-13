@@ -1,0 +1,7 @@
+2026-11-13T09:17:23.7811038Z   ref: b79fb42eee772e026ce84890de0ca8cf65b6ef62
+2026-11-13T09:17:38.7804341Z HEAD is now at b79fb42 Apply project formatter to archive cleanup regression
+2026-11-13T09:18:32.2947196Z 11 passed in 26.46s
+2026-11-13T09:19:20.8693547Z 36 passed in 44.51s
+2026-11-13T09:19:50.7228373Z 9 failed, 2 passed in 25.19s
+2026-11-13T09:19:51.5716846Z All checks passed!
+2026-11-13T09:19:51.5948530Z 2 files already formatted

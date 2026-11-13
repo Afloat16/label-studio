@@ -1,0 +1,31 @@
+{
+  "repository": "HumanSignal/label-studio",
+  "stars": 28683,
+  "title": "fix: clean intermediate ZIP archives after synchronous export",
+  "base": "56b3048e0ab5e680929cfaf57fc1d541cb3ab7ea",
+  "base_branch": "develop",
+  "branch": "fix/synchronous-export-archive-cleanup-20261113",
+  "commit": "b79fb42eee772e026ce84890de0ca8cf65b6ef62",
+  "commit_url": "https://github.com/Afloat16/label-studio/commit/b79fb42eee772e026ce84890de0ca8cf65b6ef62",
+  "pr_created": true,
+  "pr_status": "open",
+  "pr_url": "https://github.com/HumanSignal/label-studio/pull/10051",
+  "pr_number": 10051,
+  "merged_at": null,
+  "counts_for_implementation": true,
+  "counts_for_merged": false,
+  "issue_url": "https://github.com/HumanSignal/label-studio/issues/10049",
+  "body": "## Reason for change\n\nCloses #10049.\n\nSynchronous exports with multiple output files create an intermediate ZIP beside the managed output directory. The function then copies that ZIP into the returned temporary file. Cleaning the conversion directories and closing the returned file leaves the intermediate archive behind, so repeated exports accumulate disk usage.\n\nCreate the intermediate ZIP inside the separately managed input directory, while continuing to archive only the converter's output directory. The returned file remains an independent temporary copy with the same public filename and contents.\n\n## Tests and acceptance criteria\n\n- Successful COCO/YOLO exports leave only the returned temporary file; closing it removes the final temporary artifact.\n- Empty, one-task, and three-task exports preserve actual archive contents, category labels, COCO boxes, and YOLO values.\n- Repeated exports do not accumulate archives, and two concurrently open returned files have independent lifetimes.\n- Single-file JSON behavior and input task data remain unchanged.\n- Exact tested commit: `b79fb42eee772e026ce84890de0ca8cf65b6ef62`.\n- SQLite and PostgreSQL 16 each pass 11 new cases and all 36 existing export-media cases.\n- Original source on each database: 9 failures and 2 passing controls.\n- Ruff 0.15.1 lint and format checks pass.\n\nNative validation: https://github.com/Afloat16/label-studio/actions/runs/43400018800\n\n## Scope and risks\n\nThis fixes orphan ZIP files after successful synchronous exports. It does not change persistent snapshot storage, media download authorization, or the existing temporary-directory helper's exception behavior. The archive is created outside its input tree, so it cannot include itself or the converter input JSON.\n",
+  "validation": {
+    "after": "SQLite and PostgreSQL 16 each: 11 new and 36 existing export-media tests passed.",
+    "before": "Both databases: 9 failed and 2 passed on original source.",
+    "checks": "Ruff 0.15.1 lint/format passed.",
+    "run_url": "https://github.com/Afloat16/label-studio/actions/runs/43400018800",
+    "workflow_commit": "54d79c4b3fd11ffed6f13a7264e1cf7c9e1063cc",
+    "validation_branch": "validation/synchronous-export-archive-cleanup-20261113",
+    "broader": "Real Django DB and locked native Label Studio SDK converters. Scope is successful synchronous export; existing get_temp_dir exception cleanup and persisted snapshot storage are not changed."
+  },
+  "independent_review": "existing_prs approved exact source 29cd49e; final b79fb42 applies formatting only.",
+  "deduplication": "All fork heads are this task or isolated audit branches. Full 34-entry export-model history catalog and actual #5612/#9418, 141e37a and 486d8ec patches reviewed; all-state generate_export_file/make_archive/export temporary/zip leak searches found no equivalent change.",
+  "recorded_at": "2026-11-13T09:24:11.191Z"
+}
