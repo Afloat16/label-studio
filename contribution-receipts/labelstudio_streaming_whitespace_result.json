@@ -1,0 +1,31 @@
+{
+  "repository": "HumanSignal/label-studio",
+  "stars": 28683,
+  "title": "fix: accept long leading whitespace in streaming JSON imports",
+  "base": "2d111356dcaed6b137fce6884112bd6e7c0997fc",
+  "base_branch": "develop",
+  "branch": "fix/streaming-json-leading-whitespace-20261112",
+  "commit": "8fce0827c6980b02722bb11b3c470568bf7f521d",
+  "commit_url": "https://github.com/Afloat16/label-studio/commit/8fce0827c6980b02722bb11b3c470568bf7f521d",
+  "pr_created": true,
+  "pr_status": "open",
+  "pr_url": "https://github.com/HumanSignal/label-studio/pull/10048",
+  "pr_number": 10048,
+  "merged_at": null,
+  "counts_for_implementation": true,
+  "counts_for_merged": false,
+  "issue_url": "https://github.com/HumanSignal/label-studio/issues/10046",
+  "body": "## Reason for change\n\nCloses #10046.\n\nThe streaming JSON reader inspected only the first 4,096 bytes when selecting the array or object parser. Valid JSON with a longer whitespace prefix therefore failed import before either parser ran.\n\nScan successive bounded blocks until the first non-JSON-whitespace byte or EOF, then seek back to the beginning and use the existing parser. This keeps the existing handling of arrays, objects, invalid input, and upload metadata.\n\n## Tests and acceptance criteria\n\n- Native file uploads and both file/async loaders accept valid prefixes across the 4,096-byte boundary, including a 65,536-byte prefix.\n- Batch contents, metadata, and file bytes remain unchanged.\n- Empty input and non-JSON whitespace continue to raise validation errors.\n- Exact tested commit: `8fce0827c6980b02722bb11b3c470568bf7f521d`.\n- SQLite and PostgreSQL 16 each pass 21 new cases and 10 existing streaming import cases.\n- Original source on each database: 12 failures and 9 passing controls.\n- Ruff 0.15.1 lint and format checks pass.\n\nNative validation: https://github.com/Afloat16/label-studio/actions/runs/43310332585\n\n## Scope and risks\n\nThe prefix scan uses one 4,096-byte block at a time. The existing object parser and its materialization behavior are unchanged; this does not claim fully streaming object imports.\n",
+  "validation": {
+    "after": "SQLite and PostgreSQL 16: 21 new and 10 existing cases passed on each database.",
+    "before": "SQLite and PostgreSQL 16: 12 failed and 9 passed on original source.",
+    "checks": "Ruff 0.15.1 lint and formatting passed.",
+    "run_url": "https://github.com/Afloat16/label-studio/actions/runs/43310332585",
+    "workflow_commit": "00287b479dcf5e0ba184203baa1d2b6623d1a8f4",
+    "validation_branch": "validation/streaming-json-leading-whitespace-20261112",
+    "broader": "Native Django/DRF and actual SQLite/PostgreSQL 16; no browser/frontend claim."
+  },
+  "independent_review": "existing_prs read-only semantic review passed; subsequent change applies formatting only.",
+  "deduplication": "All fork heads checked; complete 27-entry import-model history and broad JSON/streaming whitespace searches reviewed; #8507 introduced fixed sniff and #9189 affects a separate storage path.",
+  "recorded_at": "2026-11-13T09:06:27.961Z"
+}

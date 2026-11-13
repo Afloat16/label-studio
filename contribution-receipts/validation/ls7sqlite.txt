@@ -1,0 +1,8 @@
+2026-11-12T21:28:17.7353942Z   ref: 8fce0827c6980b02722bb11b3c470568bf7f521d
+2026-11-12T21:28:30.5761339Z HEAD is now at 8fce082 Apply project formatter to streaming whitespace regressions
+2026-11-12T21:29:21.3255721Z 21 passed in 26.64s
+2026-11-12T21:29:48.9302909Z 10 passed in 23.58s
+2026-11-12T21:29:49.4732089Z [36;1massert re.search(r"[1-9]\d* failed", text), text[0m
+2026-11-12T21:30:18.9015805Z 12 failed, 9 passed in 25.30s
+2026-11-12T21:30:19.3212185Z All checks passed!
+2026-11-12T21:30:19.3456161Z 2 files already formatted

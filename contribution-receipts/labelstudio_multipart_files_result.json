@@ -1,0 +1,31 @@
+{
+  "repository": "HumanSignal/label-studio",
+  "stars": 28683,
+  "title": "fix: process every file in repeated multipart upload fields",
+  "base": "2d111356dcaed6b137fce6884112bd6e7c0997fc",
+  "base_branch": "develop",
+  "branch": "fix/repeated-multipart-upload-fields-20261112",
+  "commit": "f0783c10eacf7c7857ebff179d77ff9cc729d1d3",
+  "commit_url": "https://github.com/Afloat16/label-studio/commit/f0783c10eacf7c7857ebff179d77ff9cc729d1d3",
+  "pr_created": true,
+  "pr_status": "open",
+  "pr_url": "https://github.com/HumanSignal/label-studio/pull/10045",
+  "pr_number": 10045,
+  "merged_at": null,
+  "counts_for_implementation": true,
+  "counts_for_merged": false,
+  "issue_url": "https://github.com/HumanSignal/label-studio/issues/10044",
+  "body": "## Reason for change\n\nCloses #10044.\n\nDjango's multipart file mapping can contain multiple uploaded files under one field. Iterating its items returns only the final value, so earlier uploads are omitted from task creation and from extension/total-size validation.\n\nAdd one iterator that expands native MultiValueDict lists and keeps the existing values behavior for ordinary mappings. Use a fresh iterator in each of the two validation and two import entry points.\n\n## Tests and acceptance criteria\n\n- Every file in repeated or mixed multipart fields contributes its own expected tasks and FileUpload record.\n- The total-size limit applies to all files, and unsupported extensions in either position are rejected before persistence.\n- Ordinary single-value mappings and empty mappings retain their behavior.\n- Native DRF multipart requests cover synchronous loading, FileUpload preparation, and the real import API.\n- Exact tested commit: `f0783c10eacf7c7857ebff179d77ff9cc729d1d3`.\n- SQLite and PostgreSQL 16 each pass 18 new cases and 6 existing import validation cases.\n- Original source: 11 failures and 7 passing controls on each database.\n- Ruff 0.15.1 lint and format checks pass.\n\nNative validation: https://github.com/Afloat16/label-studio/actions/runs/43307508940\n\n## Scope and risks\n\nThis changes traversal of uploaded file values, not parsing of individual files, URL downloads, or task formats. Each validation/import operation creates its own iterator and does not consume file contents during validation.\n",
+  "validation": {
+    "after": "SQLite and PostgreSQL 16: 18 new and 6 existing cases passed on each database.",
+    "before": "SQLite and PostgreSQL 16: 11 failed and 7 passed on original source.",
+    "checks": "Ruff 0.15.1 lint and formatting passed.",
+    "run_url": "https://github.com/Afloat16/label-studio/actions/runs/43307508940",
+    "workflow_commit": "1e9de1b77aa9a4192efd615b43e9993894f37f60",
+    "validation_branch": "validation/repeated-multipart-upload-fields-20261112",
+    "broader": "Native Django/DRF and actual SQLite/PostgreSQL 16; no browser/frontend claim."
+  },
+  "independent_review": "existing_prs read-only review passed exact source f0783c10",
+  "deduplication": "All fork heads and personal history contained only this batch; full uploader file history and multipart/multiple-file related PRs reviewed, including #3623 and #9969.",
+  "recorded_at": "2026-11-13T09:06:27.538Z"
+}
