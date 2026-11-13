@@ -35,7 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 29cd49e573608514dce58f24210d9cc42f5a8dfe
+          ref: b79fb42eee772e026ce84890de0ca8cf65b6ef62
           fetch-depth: 3
           persist-credentials: false
       - uses: astral-sh/setup-uv@v10.3.3
@@ -75,7 +75,7 @@ jobs:
           assert re.search(r"[1-9]\d* failed", text), text
           assert "ERROR collecting" not in text, text
           PY
-          git checkout 29cd49e573608514dce58f24210d9cc42f5a8dfe -- label_studio/data_export/models.py
+          git checkout b79fb42eee772e026ce84890de0ca8cf65b6ef62 -- label_studio/data_export/models.py
       - name: Check changed Python files
         run: |
           uvx --from ruff==0.15.1 ruff check label_studio/data_export/models.py label_studio/tests/test_export_temporary_archives.py
