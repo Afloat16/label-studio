@@ -1,0 +1,92 @@
+name: Validate synchronous export archive cleanup
+on:
+  push:
+    branches: [validation/synchronous-export-archive-cleanup-20261113]
+permissions:
+  contents: read
+jobs:
+  database-native:
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, postgresql]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DJANGO_SETTINGS_MODULE: core.settings.label_studio
+      DJANGO_DB: ${{ matrix.database }}
+      PYTHONPATH: label_studio
+      COLLECT_ANALYTICS: "false"
+      SENTRY_RATE: "0"
+      SENTRY_DSN: ""
+      JSON_LOG: "0"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 29cd49e573608514dce58f24210d9cc42f5a8dfe
+          fetch-depth: 3
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - name: Install documented system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libffi8 libldap2-dev libsasl2-dev libssl-dev libxml2-dev libxslt-dev python3-dev
+      - name: Install locked native dependencies
+        run: uv sync --frozen --group test
+      - name: Generate native version file
+        run: uv run --no-sync python label_studio/core/version.py
+      - name: Run native export archive regressions
+        run: |
+          set -o pipefail
+          uv run --no-sync pytest label_studio/tests/test_export_temporary_archives.py -q 2>&1 | tee patched.log
+      - name: Run existing export media controls
+        run: |
+          set -o pipefail
+          uv run --no-sync pytest label_studio/tests/test_export_media_downloads.py -q 2>&1 | tee existing.log
+      - name: Verify original exports leave intermediate archives
+        run: |
+          git checkout 56b3048e0ab5e680929cfaf57fc1d541cb3ab7ea -- label_studio/data_export/models.py
+          set +e
+          uv run --no-sync pytest label_studio/tests/test_export_temporary_archives.py -q > baseline.log 2>&1
+          status=$?
+          set -e
+          cat baseline.log
+          test "$status" -eq 1
+          uv run --no-sync python - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path("baseline.log").read_text()
+          assert re.search(r"[1-9]\d* failed", text), text
+          assert "ERROR collecting" not in text, text
+          PY
+          git checkout 29cd49e573608514dce58f24210d9cc42f5a8dfe -- label_studio/data_export/models.py
+      - name: Check changed Python files
+        run: |
+          uvx --from ruff==0.15.1 ruff check label_studio/data_export/models.py label_studio/tests/test_export_temporary_archives.py
+          uvx --from ruff==0.15.1 ruff format --check --diff label_studio/data_export/models.py label_studio/tests/test_export_temporary_archives.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: synchronous-export-archive-cleanup-${{ matrix.database }}
+          path: |
+            patched.log
+            existing.log
+            baseline.log
+
+
