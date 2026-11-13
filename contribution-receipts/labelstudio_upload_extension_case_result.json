@@ -1,0 +1,31 @@
+{
+  "repository": "HumanSignal/label-studio",
+  "stars": 28683,
+  "title": "fix: normalize upload suffix case before parser selection",
+  "base": "56b3048e0ab5e680929cfaf57fc1d541cb3ab7ea",
+  "base_branch": "develop",
+  "branch": "fix/upload-format-extension-case-20261113",
+  "commit": "bc366894e486ab8d74194c4ab0a51f3acd2b6027",
+  "commit_url": "https://github.com/Afloat16/label-studio/commit/bc366894e486ab8d74194c4ab0a51f3acd2b6027",
+  "pr_created": true,
+  "pr_status": "open",
+  "pr_url": "https://github.com/HumanSignal/label-studio/pull/10054",
+  "pr_number": 10054,
+  "merged_at": null,
+  "counts_for_implementation": true,
+  "counts_for_merged": false,
+  "issue_url": "https://github.com/HumanSignal/label-studio/issues/10050",
+  "body": "## Problem\n\nUploaded files are accepted by the existing case-insensitive extension checks, but `FileUpload.format` retains the suffix's original case. Parser selection compares that value with lowercase format names. As a result, a valid `tasks.JSON`, `tasks.CsV` or `tasks.TSV` can fail import or be treated as an asset instead of structured task data.\n\n## Change\n\nNormalize the format suffix to lowercase where `FileUpload.format` exposes it. This gives synchronous imports, streaming imports and format filters the same format value while retaining the stored filename and file contents.\n\nFixes #10050.\n\n## Validation\n\n[Native validation of the exact commit](https://github.com/Afloat16/label-studio/actions/runs/43402380605) passed with the repository's locked dependencies on SQLite and PostgreSQL 16:\n\n- 29 new cases passed on each database. The same cases against the original source produced 20 failures and 9 passes.\n- 10 existing import controls passed on each database.\n- Ruff lint and formatting passed.\n\nCoverage includes lowercase, uppercase and mixed-case suffixes for JSON, CSV, TSV, TXT, HTML, HTM and XML; the authenticated import API persists all rows from JSON/CSV/TSV; synchronous and streaming parser paths agree. Explicit TXT/CSV file-as-asset imports remain supported. Tests also verify that the stored filename's case and bytes are preserved.\n\nTested commit: `bc366894e486ab8d74194c4ab0a51f3acd2b6027`.\n\n## Rollout and scope\n\nNo migration or new setting is required. This normalizes format metadata at the existing dispatch boundary; it does not rename uploaded files.",
+  "validation": {
+    "after": "SQLite and PostgreSQL 16 each: 29 new and 10 existing import tests passed.",
+    "before": "Both databases: original source 20 failed and 9 passed.",
+    "checks": "Ruff 0.15.1 lint and format passed.",
+    "run_url": "https://github.com/Afloat16/label-studio/actions/runs/43402380605",
+    "workflow_commit": "5fe14ed5bd4bf0bc21ca24e524c145ff40b890d5",
+    "validation_branch": "validation/upload-format-extension-case-20261113",
+    "broader": "Native Django API and both parser modes using locked dependencies. No file renaming or byte changes. Explicit TXT/CSV asset imports retained. Initial API fixture used a different client authentication assumption and was corrected to the repository's authenticated business_client; only final identical original/fixed fixtures are counted."
+  },
+  "independent_review": "existing_prs approved one-line production change and 29 tests; final changes are fixture correction and Ruff formatting.",
+  "deduplication": "All fork heads belong to this task or isolated validation/audit branches. Full 27-entry model history catalog and actual #3725 extension validator, #4515 frontend, #6808 cache and #7965 storage patches reviewed; broad all-state extension/case/parser/import searches found no equivalent format-property normalization.",
+  "recorded_at": "2026-11-13T09:44:27.336Z"
+}
