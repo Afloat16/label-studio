@@ -1,0 +1,31 @@
+{
+  "repository": "HumanSignal/label-studio",
+  "stars": 28683,
+  "title": "fix: derive URL import filenames from the resolved path",
+  "base": "ad1ccb4d41b75b74e904b125b17c71ec753e3c05",
+  "base_branch": "develop",
+  "branch": "fix/url-import-filename-path-20261113",
+  "commit": "0e1901aed38f406f993ecfc48d33efd65572e339",
+  "commit_url": "https://github.com/Afloat16/label-studio/commit/0e1901aed38f406f993ecfc48d33efd65572e339",
+  "pr_created": true,
+  "pr_status": "open",
+  "pr_url": "https://github.com/HumanSignal/label-studio/pull/10053",
+  "pr_number": 10053,
+  "merged_at": null,
+  "counts_for_implementation": true,
+  "counts_for_merged": false,
+  "issue_url": "https://github.com/HumanSignal/label-studio/issues/10052",
+  "body": "## Problem\n\nDirect URL imports derive the filename from the entire URL. A valid URL such as `https://host/tasks.json?token=example` therefore gets the unsupported extension `.json?token=example`. A slash in the query can also replace the basename and send structured data down the asset-import path. Redirected responses already parse the URL path, so equivalent direct and redirected resources behave differently.\n\n## Change\n\nDerive the filename from the decoded path of the resolved response URL for both cases, then take its basename. The request still uses the complete original URL, including its query parameters. Existing address, extension and size validation remain in place.\n\nFixes #10052.\n\n## Validation\n\nNative tests ran against both SQLite and PostgreSQL with the repository's locked dependencies:\n\n- 26 new tests passed on each database; the same tests against the original source produced 14 failures and 12 passes.\n- 10 existing import-validation controls passed on each database.\n- Ruff checks and formatting checks passed.\n\nThe regressions use a local HTTP server and the real request/import paths. They cover direct and redirected JSON/CSV URLs, query strings and fragments, percent-encoded filenames, the authenticated import API, both project-import parser modes, unsupported extensions and the size limit. A separate control verifies that enabled SSRF protection still rejects the local address before a request is made.\n\n[Exact-commit validation](https://github.com/Afloat16/label-studio/actions/runs/43402323705) tests commit `0e1901aed38f406f993ecfc48d33efd65572e339`.\n\n## Scope\n\nThis changes filename selection and parser dispatch. It introduces no setting, migration or UI change. Download buffering is unchanged.",
+  "validation": {
+    "after": "SQLite and PostgreSQL 16 each: 26 new tests and 10 existing import controls passed.",
+    "before": "Both databases: original source 14 failed and 12 passed.",
+    "checks": "Ruff 0.15.1 lint and format passed.",
+    "run_url": "https://github.com/Afloat16/label-studio/actions/runs/43402323705",
+    "workflow_commit": "1cb246870b97abb4d5c50523cde093428c613dcb",
+    "validation_branch": "validation/url-import-filename-path-20261113",
+    "broader": "Native Django imports, real HTTP transport to an isolated local server, locked dependencies. Local test fixture permits its controlled loopback server; a separate enabled-SSRF test rejects that address before any request. Production address and size validation remain unchanged. Download buffering is unchanged."
+  },
+  "independent_review": "existing_prs approved source d1f9ac1 and 26 cases; final 0e1901a changes test formatting only.",
+  "deduplication": "All fork heads belong to this task or isolated validation/audit branches. Complete 30-entry uploader history catalog and actual PRs #7701 (redirect-only filename parsing), #7687, #3770 and #2411 reviewed. Broad all-state filename/query/URL import searches found no equivalent direct-response path fix.",
+  "recorded_at": "2026-11-13T09:42:52.783Z"
+}
